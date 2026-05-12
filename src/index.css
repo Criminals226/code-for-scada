@@ -1,0 +1,218 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Smart Grid SCADA Industrial Theme
+   All colors are HSL for proper theming
+*/
+
+@layer base {
+  :root {
+    /* Industrial Dark Theme - Always dark for SCADA */
+    --background: 220 20% 6%;
+    --foreground: 180 5% 90%;
+
+    --card: 220 18% 10%;
+    --card-foreground: 180 5% 90%;
+
+    --popover: 220 18% 12%;
+    --popover-foreground: 180 5% 90%;
+
+    --primary: 142 70% 45%;
+    --primary-foreground: 220 20% 6%;
+
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 180 5% 85%;
+
+    --muted: 220 15% 15%;
+    --muted-foreground: 180 5% 55%;
+
+    --accent: 45 90% 50%;
+    --accent-foreground: 220 20% 6%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 15% 20%;
+    --input: 220 15% 18%;
+    --ring: 142 70% 45%;
+
+    --radius: 0.25rem;
+
+    /* SCADA-specific semantic colors */
+    --scada-normal: 142 70% 45%;
+    --scada-warning: 45 90% 50%;
+    --scada-critical: 0 70% 50%;
+    --scada-info: 200 80% 55%;
+    --scada-offline: 220 10% 40%;
+    
+    /* Gauge and meter colors */
+    --gauge-low: 142 70% 45%;
+    --gauge-mid: 45 90% 50%;
+    --gauge-high: 0 70% 50%;
+    
+    /* Grid lines */
+    --grid-line: 220 15% 15%;
+    --grid-glow: 142 70% 45%;
+
+    --sidebar-background: 220 20% 8%;
+    --sidebar-foreground: 180 5% 85%;
+    --sidebar-primary: 142 70% 45%;
+    --sidebar-primary-foreground: 220 20% 6%;
+    --sidebar-accent: 220 15% 15%;
+    --sidebar-accent-foreground: 180 5% 90%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 142 70% 45%;
+    
+    /* Chart colors */
+    --chart-1: 142 70% 45%;
+    --chart-2: 200 80% 55%;
+    --chart-3: 45 90% 50%;
+    --chart-4: 280 60% 55%;
+    --chart-5: 0 70% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+  
+  /* Industrial scan line effect */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      hsl(220 20% 6% / 0.03) 2px,
+      hsl(220 20% 6% / 0.03) 4px
+    );
+    z-index: 9999;
+  }
+}
+
+@layer utilities {
+  /* Glow effects */
+  .glow-normal {
+    box-shadow: 0 0 10px hsl(var(--scada-normal) / 0.3),
+                0 0 20px hsl(var(--scada-normal) / 0.1);
+  }
+  
+  .glow-warning {
+    box-shadow: 0 0 10px hsl(var(--scada-warning) / 0.3),
+                0 0 20px hsl(var(--scada-warning) / 0.1);
+  }
+  
+  .glow-critical {
+    box-shadow: 0 0 10px hsl(var(--scada-critical) / 0.3),
+                0 0 20px hsl(var(--scada-critical) / 0.1);
+  }
+  
+  .text-glow-normal {
+    text-shadow: 0 0 10px hsl(var(--scada-normal) / 0.5);
+  }
+  
+  .text-glow-warning {
+    text-shadow: 0 0 10px hsl(var(--scada-warning) / 0.5);
+  }
+  
+  .text-glow-critical {
+    text-shadow: 0 0 10px hsl(var(--scada-critical) / 0.5);
+  }
+  
+  /* Industrial grid background */
+  .bg-grid {
+    background-image: 
+      linear-gradient(hsl(var(--grid-line)) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--grid-line)) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  
+  /* Pulse animation for alerts */
+  .pulse-critical {
+    animation: pulse-critical 1s ease-in-out infinite;
+  }
+  
+  @keyframes pulse-critical {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+  
+  /* Meter fill animation */
+  .meter-fill {
+    transition: width 0.5s ease-out;
+  }
+  
+  /* Data stream effect */
+  .data-stream {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--scada-normal) / 0.1) 50%,
+      transparent 100%
+    );
+    animation: data-stream 2s linear infinite;
+  }
+  
+  @keyframes data-stream {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  
+  /* Terminal cursor blink */
+  .cursor-blink::after {
+    content: '▋';
+    animation: blink 1s step-end infinite;
+  }
+  
+  @keyframes blink {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Custom font import */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
