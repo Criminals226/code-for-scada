@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api, SystemState, formatPower } from '@/lib/api';
 import { useScada } from '@/contexts/ScadaContext';
+import { useAttack } from '@/contexts/AttackContext';
+import { cn } from '@/lib/utils';
 import { DataCard } from '@/components/scada/DataCard';
 import { GaugeCircular } from '@/components/scada/GaugeCircular';
 import { MeterBar } from '@/components/scada/MeterBar';
@@ -27,6 +29,9 @@ export default function Dashboard() {
   const { user } = useAuth();
   const canControl = isAdminRole(user?.role);
   const { data: scadaData, isConnected, mqttConnected } = useScada();
+  const { type: attackType, active: attackActive } = useAttack();
+  const isFdi = attackActive && attackType === 'FDI';
+  const isReplay = attackActive && attackType === 'REPLAY';
   const [loadingControl, setLoadingControl] = useState<string | null>(null);
 
   const { data: apiState } = useQuery({
@@ -48,49 +53,71 @@ export default function Dashboard() {
     ? undefined
     : (scadaData ?? apiState ?? undefined);
 
-  const getStatusLevel = (level: string): 'normal' | 'warning' | 'critical' => {
-    switch (level?.toUpperCase()) {
-      case 'CRITICAL': return 'critical';
-      case 'WARNING': return 'warning';
-      default: return 'normal';
-    }
-  };
-
   const [localOverrides, setLocalOverrides] = useState<Partial<SystemState>>({});
+
+  const effectiveState: SystemState | undefined = state
+    ? { ...state, ...localOverrides }
+    : (localOverrides as SystemState | undefined);
 
   const handleControl = async (action: string) => {
     if (!canControl) {
       toast.error('Administrator role required for breaker control.');
       return;
     }
+
     setLoadingControl(action);
 
-    if (action === 'toggle_area1') {
-      const current = (localOverrides.area1 ?? state?.area1) === 'ON' ? 'OFF' : 'ON';
-      setLocalOverrides(prev => ({ ...prev, area1: current }));
-    } else if (action === 'toggle_area2') {
-      const current = (localOverrides.area2 ?? state?.area2) === 'ON' ? 'OFF' : 'ON';
-      setLocalOverrides(prev => ({ ...prev, area2: current }));
-    }
-
     try {
+      // Determine new state immediately
+      if (action === 'toggle_area1') {
+        const newState =
+          (effectiveState?.area1 ?? 'OFF') === 'ON' ? 'OFF' : 'ON';
+
+        setLocalOverrides(prev => ({
+          ...prev,
+          area1: newState,
+        }));
+      }
+
+      if (action === 'toggle_area2') {
+        const newState =
+          (effectiveState?.area2 ?? 'OFF') === 'ON' ? 'OFF' : 'ON';
+
+        setLocalOverrides(prev => ({
+          ...prev,
+          area2: newState,
+        }));
+      }
+
+      // Send backend control
       await api.sendControl(action);
+
       toast.success(`Command sent: ${action.replace('_', ' ')}`);
-    } catch {
-      toast.info(`Local update: ${action.replace('_', ' ')}`);
+
+      // Keep override until backend catches up
+      setTimeout(() => {
+        setLocalOverrides(prev => {
+          const next = { ...prev };
+
+          if (action === 'toggle_area1') {
+            delete next.area1;
+          }
+
+          if (action === 'toggle_area2') {
+            delete next.area2;
+          }
+
+          return next;
+        });
+      }, 2000);
+
+    } catch (error) {
+      toast.error('Failed to send control command');
+      console.error(error);
     } finally {
       setLoadingControl(null);
-      if (action === 'toggle_area1') {
-        setLocalOverrides(prev => { const next = { ...prev }; delete next.area1; return next; });
-      } else if (action === 'toggle_area2') {
-        setLocalOverrides(prev => { const next = { ...prev }; delete next.area2; return next; });
-      }
     }
   };
-
-  const effectiveState: SystemState | undefined = state
-    ? { ...state, ...localOverrides }
-    : localOverrides as SystemState | undefined;
 
   return (
     <div className="space-y-6">
@@ -119,13 +146,16 @@ export default function Dashboard() {
       </div>
 
       {blackout && (
-        <div className="rounded-lg border-2 border-scada-critical bg-scada-critical/10 p-6 text-center font-mono animate-pulse-glow">
-          <div className="text-2xl font-bold text-scada-critical uppercase tracking-widest">
-            ⚠ SYSTEM OFFLINE
-          </div>
-          <div className="text-xs text-foreground/70 mt-2">
-            Telemetry blackout detected — all live values unavailable (DoS).
-          </div>
+        <div
+          role="status"
+          className="rounded-lg border border-border bg-card px-4 py-3 flex flex-wrap items-center gap-3 font-mono text-xs"
+        >
+          <span className="shrink-0 rounded border border-border bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            OFFLINE
+          </span>
+          <span className="text-muted-foreground">
+            Telemetry link down (DoS). Dashboard chrome unchanged — localized indicators only.
+          </span>
         </div>
       )}
 
@@ -181,9 +211,25 @@ export default function Dashboard() {
                   title="Security Level"
                   value={effectiveState?.security_level ?? 'NORMAL'}
                   icon={Server}
-                  status={getStatusLevel(effectiveState?.security_level || 'NORMAL')}
+                  status="normal"
                   subtitle={`Attack Score: ${(effectiveState?.attack_score ?? 0).toFixed(2)}`}
-                />
+                >
+                  {(() => {
+                    const lvl = (effectiveState?.security_level ?? 'NORMAL').toUpperCase();
+                    if (lvl === 'NORMAL') return null;
+                    return (
+                      <span
+                        className={cn(
+                          'inline-flex mt-2 rounded border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                          lvl === 'CRITICAL' && 'border-scada-critical text-scada-critical',
+                          lvl === 'WARNING' && 'border-scada-warning text-scada-warning',
+                        )}
+                      >
+                        Posture: {lvl}
+                      </span>
+                    );
+                  })()}
+                </DataCard>
               </div>
             );
           })()}
@@ -203,6 +249,9 @@ export default function Dashboard() {
                   label="Voltage"
                   warningThreshold={245}
                   criticalThreshold={255}
+                  forceNeutralArc={isFdi}
+                  injectionValueHighlight={isFdi}
+                  replayFrozenHighlight={isReplay && !isFdi}
                 />
                 <GaugeCircular
                   value={effectiveState?.frequency ?? 50}
@@ -212,6 +261,9 @@ export default function Dashboard() {
                   label="Frequency"
                   warningThreshold={50.5}
                   criticalThreshold={51.5}
+                  forceNeutralArc={isFdi}
+                  injectionValueHighlight={isFdi}
+                  replayFrozenHighlight={isReplay && !isFdi}
                 />
               </div>
             </div>

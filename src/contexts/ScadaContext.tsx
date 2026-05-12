@@ -36,7 +36,7 @@ import { generateSCADAData } from '@/lib/scadaSimulator';
 /**
  * Centralised SCADA pipeline.
  *
- *   1. Read baseData = MQTT (preferred) || generateSCADAData() (fallback)
+ *   1. Read baseData = backend `state_update` when socket is live, else generateSCADAData()
  *   2. modelSystem(baseData)         → Power Plant → Smart Feeder → Smart Meter
  *   3. applyAttack(modeled.sample)   → FDI / Replay / DoS transformation
  *   4. detectThreat(tampered, prev)  → score + posture + dedup'd log entry
@@ -144,6 +144,11 @@ export function ScadaProvider({ children }: { children: React.ReactNode }) {
     rawStateRef.current = rawState;
   }, [rawState]);
 
+  const isConnectedRef = useRef(isConnected);
+  useEffect(() => {
+    isConnectedRef.current = isConnected;
+  }, [isConnected]);
+
   const mqttConnectedRef = useRef(mqttConnected);
   useEffect(() => {
     mqttConnectedRef.current = mqttConnected;
@@ -175,12 +180,20 @@ export function ScadaProvider({ children }: { children: React.ReactNode }) {
   // Main pipeline tick.
   useEffect(() => {
     const tick = () => {
-      // 1. baseData = MQTT (preferred) || simulator
-      const mqttSample = mqttConnectedRef.current
-        ? asGridSample(rawStateRef.current)
-        : null;
-      const baseSample: GridSample = mqttSample ?? generateSCADAData();
-      const currentSource: 'mqtt' | 'simulation' = mqttSample ? 'mqtt' : 'simulation';
+      // 1. Prefer backend snapshot over socket whenever connected (Flask digital twin OR
+      //    hardware merge). Fall back to client simulator only when socket is down / no data yet.
+      const raw = rawStateRef.current;
+      const backendSample =
+        isConnectedRef.current && raw != null ? asGridSample(raw) : null;
+      const baseSample: GridSample = backendSample ?? generateSCADAData();
+
+      let currentSource: 'mqtt' | 'simulation' = 'simulation';
+      if (backendSample) {
+        const ds = raw?.data_source;
+        if (ds === 'hardware' || (ds == null && mqttConnectedRef.current)) {
+          currentSource = 'mqtt';
+        }
+      }
 
       // 2. System modelling (Plant → Feeder → Meter)
       const modeled = modelSystem(baseSample);

@@ -8,6 +8,12 @@ interface GaugeCircularProps {
   label: string;
   warningThreshold?: number;
   criticalThreshold?: number;
+  /** Keep arc in nominal styling even when value crosses thresholds (e.g. FDI-injected readings). */
+  forceNeutralArc?: boolean;
+  /** Blink center value in injection-alert styling (FDI). */
+  injectionValueHighlight?: boolean;
+  /** Subtle frozen-telemetry styling for replay (localized text only). */
+  replayFrozenHighlight?: boolean;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
@@ -20,12 +26,14 @@ export function GaugeCircular({
   label,
   warningThreshold,
   criticalThreshold,
+  forceNeutralArc = false,
+  injectionValueHighlight = false,
+  replayFrozenHighlight = false,
   size = 'md',
   className,
 }: GaugeCircularProps) {
   const normalizedValue = Math.min(Math.max((value - min) / (max - min), 0), 1);
-  const angle = normalizedValue * 270 - 135; // -135 to 135 degrees
-  
+
   const sizeClasses = {
     sm: 'w-24 h-24',
     md: 'w-32 h-32',
@@ -39,12 +47,15 @@ export function GaugeCircular({
   };
 
   const getColor = () => {
-    if (criticalThreshold && value >= criticalThreshold) return 'text-scada-critical';
-    if (warningThreshold && value >= warningThreshold) return 'text-scada-warning';
+    if (injectionValueHighlight) return 'text-scada-critical animate-pulse';
+    if (replayFrozenHighlight) return 'text-scada-warning';
+    if (!forceNeutralArc && criticalThreshold && value >= criticalThreshold) return 'text-scada-critical';
+    if (!forceNeutralArc && warningThreshold && value >= warningThreshold) return 'text-scada-warning';
     return 'text-scada-normal';
   };
 
   const getStrokeColor = () => {
+    if (forceNeutralArc) return 'stroke-scada-normal';
     if (criticalThreshold && value >= criticalThreshold) return 'stroke-scada-critical';
     if (warningThreshold && value >= warningThreshold) return 'stroke-scada-warning';
     return 'stroke-scada-normal';

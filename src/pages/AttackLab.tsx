@@ -16,7 +16,6 @@ interface AttackDef {
   severity:   'CRITICAL' | 'WARNING';
   score:      number;
   tagline:    string;
-  whatHappens: string;
   whatDetector: string;
   expectedPosture: string;
 }
@@ -29,13 +28,10 @@ const ATTACKS: AttackDef[] = [
     severity: 'CRITICAL',
     score: 18,
     tagline: 'Injects false V/f into the MQTT telemetry stream',
-    whatHappens:
-      'Voltage is pushed +30 V above real value. Frequency is pushed +1 Hz above real value. ' +
-      'Physical grid is untouched — only the sensor readings your SCADA sees are falsified.',
     whatDetector:
       'Detector checks both V and f simultaneously. If both exceed their critical bands for 2+ ' +
       'consecutive ticks it classifies this as a correlated injection (FDI_ATTACK, score 18).',
-    expectedPosture: 'CRITICAL — voltage ~260 V, frequency ~51 Hz shown on gauges',
+    expectedPosture: 'CRITICAL — nominal gauge arcs preserved; injected V/f digits blink red; diagram red outlines',
   },
   {
     type: 'REPLAY',
@@ -44,10 +40,6 @@ const ATTACKS: AttackDef[] = [
     severity: 'WARNING',
     score: 8,
     tagline: 'Re-broadcasts a frozen legitimate telemetry snapshot',
-    whatHappens:
-      'A snapshot of the grid is captured the moment you launch. Every subsequent tick sends ' +
-      'that SAME packet with its ORIGINAL timestamp. Values look normal — only the timestamp ' +
-      'never advances. A real attacker uses this to mask a physical change happening in the field.',
     whatDetector:
       'Detector compares timestamps across ticks. If the same timestamp appears 3+ times it ' +
       'classifies as REPLAY_SUSPECTED (score 8). Gauges show NORMAL values because the captured ' +
@@ -61,14 +53,10 @@ const ATTACKS: AttackDef[] = [
     severity: 'CRITICAL',
     score: 16,
     tagline: 'Nulls all telemetry — complete sensor blackout',
-    whatHappens:
-      'Every telemetry field (voltage, frequency, load, generation) is set to null. Your SCADA ' +
-      'dashboard goes dark. Operators cannot see the grid state. Automated protection systems ' +
-      'that rely on sensor data lose their inputs.',
     whatDetector:
       'Detector checks for null voltage on each tick. After 2 consecutive null ticks it classifies ' +
       'as DOS_ATTACK (score 16). All display values show NULL.',
-    expectedPosture: 'CRITICAL — all sensors NULL, diagram shows blackout overlay',
+    expectedPosture: 'CRITICAL — NULL telemetry; gray OFFLINE badges, dashed links (no full-screen overlay)',
   },
 ];
 
@@ -107,8 +95,6 @@ export default function AttackLab() {
   const isFdi     = active && activeType === 'FDI';
   const isReplay  = active && activeType === 'REPLAY';
 
-  // Per-metric anomaly status — based on ACTUAL value, not global posture
-  // This is the key fix: sensors only change color when THEIR value is wrong
   const vAnomaly = voltage   != null && (voltage   < 214 || voltage   > 246);
   const vCrit    = voltage   != null && (voltage   < 204 || voltage   > 256);
   const fAnomaly = frequency != null && (frequency < 49.4 || frequency > 50.6);
@@ -122,7 +108,6 @@ export default function AttackLab() {
     attackScore >= 15 ? 'bg-red-500' :
     attackScore >=  5 ? 'bg-yellow-400' : 'bg-emerald-500';
 
-  // Telemetry rows — color based on individual metric, not global posture
   type RowStatus = 'normal' | 'warn' | 'crit' | 'null' | 'info';
   interface Row { metric: string; expected: string; live: string; status: RowStatus; note: string }
 
@@ -320,9 +305,6 @@ export default function AttackLab() {
                     <span className="text-xs text-zinc-600">score {atk.score}</span>
                   </div>
                 </div>
-
-                {/* What happens */}
-                <p className="text-xs text-zinc-400 leading-relaxed">{atk.whatHappens}</p>
 
                 {/* Detection note */}
                 <div className="rounded bg-zinc-800/60 border border-zinc-700/50 px-3 py-2">

@@ -18,28 +18,33 @@ export function GlobalAlert({ className }: { className?: string }) {
     <div
       role="alert"
       className={cn(
-        'flex items-center gap-3 rounded-lg border-2 px-4 py-3 font-mono animate-fade-in',
-        isCritical
-          ? 'border-scada-critical bg-scada-critical/10 text-scada-critical glow-critical animate-pulse-glow'
-          : 'border-scada-warning bg-scada-warning/10 text-scada-warning glow-warning',
+        'flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 font-mono animate-fade-in shadow-sm',
         className,
       )}
     >
-      <Icon className={cn('h-5 w-5 flex-shrink-0', isCritical && 'animate-pulse')} />
+      <Icon
+        className={cn(
+          'h-5 w-5 flex-shrink-0',
+          isCritical ? 'text-scada-critical' : 'text-scada-warning',
+        )}
+      />
       <div className="flex-1 min-w-0">
-        <div className="text-xs font-bold uppercase tracking-widest">
-          ⚠ ATTACK DETECTED: {threat.type}
+        <div className="text-xs font-bold uppercase tracking-widest text-foreground">
+          ⚠ ATTACK DETECTED:{' '}
+          <span className={isCritical ? 'text-scada-critical' : 'text-scada-warning'}>{threat.type}</span>
         </div>
         {threat.raw.explanation && (
-          <div className="text-xs text-foreground/70 truncate mt-0.5">
+          <div className="text-xs text-muted-foreground truncate mt-0.5">
             {threat.raw.explanation}
           </div>
         )}
       </div>
       <span
         className={cn(
-          'px-2 py-0.5 rounded text-[10px] font-bold uppercase',
-          isCritical ? 'bg-scada-critical text-white' : 'bg-scada-warning text-black',
+          'px-2 py-0.5 rounded text-[10px] font-bold uppercase border bg-transparent',
+          isCritical
+            ? 'border-scada-critical text-scada-critical'
+            : 'border-scada-warning text-scada-warning',
         )}
       >
         {threat.level}

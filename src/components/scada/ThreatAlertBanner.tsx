@@ -21,19 +21,13 @@ export function ThreatAlertBanner({ threat, posture, className }: ThreatAlertBan
     ? {
         Icon: Siren,
         color: 'text-scada-critical',
-        border: 'border-scada-critical',
-        bg: 'bg-scada-critical/10',
-        glow: 'glow-critical',
-        badge: 'bg-scada-critical text-white',
+        badgeBorder: 'border-scada-critical text-scada-critical',
         label: '⚠ CRITICAL THREAT DETECTED',
       }
     : {
         Icon: AlertTriangle,
         color: 'text-scada-warning',
-        border: 'border-scada-warning',
-        bg: 'bg-scada-warning/10',
-        glow: 'glow-warning',
-        badge: 'bg-scada-warning text-black',
+        badgeBorder: 'border-scada-warning text-scada-warning',
         label: '⚠ SECURITY WARNING',
       };
 
@@ -44,30 +38,12 @@ export function ThreatAlertBanner({ threat, posture, className }: ThreatAlertBan
     <div
       role="alert"
       className={cn(
-        'relative rounded-lg border-2 p-4 font-mono animate-fade-in',
-        config.border,
-        config.bg,
-        config.glow,
-        isCritical && 'animate-pulse-glow',
+        'relative rounded-lg border border-border bg-card p-4 font-mono animate-fade-in shadow-sm',
         className,
       )}
     >
-      {/* Scanline accent strip */}
-      <div
-        className={cn(
-          'absolute left-0 top-0 bottom-0 w-1 rounded-l',
-          isCritical ? 'bg-scada-critical' : 'bg-scada-warning',
-        )}
-      />
-
-      <div className="flex items-start gap-4 pl-2">
-        <div
-          className={cn(
-            'p-3 rounded-full flex-shrink-0',
-            config.bg,
-            isCritical && 'animate-pulse',
-          )}
-        >
+      <div className="flex items-start gap-4">
+        <div className="p-2 rounded-full flex-shrink-0 border border-border bg-muted/30">
           <Icon className={cn('h-7 w-7', config.color)} />
         </div>
 
@@ -76,7 +52,12 @@ export function ThreatAlertBanner({ threat, posture, className }: ThreatAlertBan
             <span className={cn('text-xs font-bold uppercase tracking-widest', config.color)}>
               {config.label}
             </span>
-            <span className={cn('px-2 py-0.5 rounded text-[10px] font-bold', config.badge)}>
+            <span
+              className={cn(
+                'px-2 py-0.5 rounded text-[10px] font-bold border bg-transparent',
+                config.badgeBorder,
+              )}
+            >
               {t?.severity || 'INFO'}
             </span>
             <span className="text-[10px] text-muted-foreground uppercase">
@@ -87,7 +68,7 @@ export function ThreatAlertBanner({ threat, posture, className }: ThreatAlertBan
           <div className={cn('text-lg font-bold uppercase', config.color)}>
             {t?.category?.replace(/_/g, ' ') || 'UNKNOWN THREAT'}
             {t?.subcategory && (
-              <span className="text-foreground/80 font-normal normal-case text-sm">
+              <span className="text-muted-foreground font-normal normal-case text-sm">
                 {' — '}
                 {t.subcategory}
               </span>
@@ -95,19 +76,18 @@ export function ThreatAlertBanner({ threat, posture, className }: ThreatAlertBan
           </div>
 
           {threat.explanation && (
-            <p className="text-xs text-foreground/70 mt-1 truncate">
+            <p className="text-xs text-muted-foreground mt-1 truncate">
               {threat.explanation}
             </p>
           )}
         </div>
 
-        {/* Live indicator */}
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           <div className="flex items-center gap-1.5">
             <span
               className={cn(
-                'h-2 w-2 rounded-full animate-pulse',
-                isCritical ? 'bg-scada-critical' : 'bg-scada-warning',
+                'h-2 w-2 rounded-full',
+                isCritical ? 'bg-scada-critical animate-pulse' : 'bg-scada-warning animate-pulse',
               )}
             />
             <span className={cn('text-[10px] font-bold uppercase', config.color)}>
