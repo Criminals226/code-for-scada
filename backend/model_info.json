@@ -1,0 +1,45 @@
+{
+  "model_type": "IsolationForest",
+  "n_estimators": 200,
+  "features": [
+    "R1:F",
+    "R1:DF",
+    "R1-PM1:V",
+    "R1-PM4:I",
+    "R1:S",
+    "R1-PA1:VH",
+    "R2:F",
+    "R2:DF",
+    "R2-PM1:V",
+    "R2-PM4:I",
+    "R2:S",
+    "R3:F",
+    "R3:DF",
+    "R3-PM1:V",
+    "R3:S",
+    "R4:F",
+    "R4:DF",
+    "R4-PM1:V",
+    "R4:S",
+    "relay1_log",
+    "relay2_log"
+  ],
+  "n_features": 21,
+  "dataset": "MSU Power System Attack Dataset",
+  "training_rows": 22714,
+  "thresholds": {
+    "warn": -0.46995240559142626,
+    "crit": -0.548237651116223,
+    "baseline_mean": -0.352524537304231,
+    "baseline_std": 0.07828524552479682
+  },
+  "performance": {
+    "natural_rows": 22714,
+    "attack_rows": 55663,
+    "detection_rate": 2.08,
+    "false_alarm_rate": 1.0,
+    "precision": 83.53,
+    "recall": 2.08,
+    "f1_score": 4.05
+  }
+}

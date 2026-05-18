@@ -71,8 +71,8 @@ export default function MainLayout() {
             <Zap className="h-5 w-5 text-scada-normal" />
           </div>
           <div>
-            <h1 className="text-sm font-mono font-bold text-sidebar-foreground">SMART GRID</h1>
-            <p className="text-xs font-mono text-muted-foreground">SCADA System</p>
+            <h1 className="text-sm font-mono font-bold text-sidebar-foreground">Cyber Ampere</h1>
+            <p className="text-xs font-mono text-muted-foreground">Smart Grid Security</p>
           </div>
         </div>
 
@@ -136,7 +136,7 @@ export default function MainLayout() {
         {/* Footer */}
         <div className="p-4 border-t border-sidebar-border">
           <p className="text-xs font-mono text-muted-foreground text-center">
-            SCADA v2.0 | Enhanced Security
+            Cyber Ampere v1.0 | Uniba & Aleena
           </p>
         </div>
       </aside>
